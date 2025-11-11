@@ -13,33 +13,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $origem = $_POST['origem'];
     $id_nivel_ensino = $_POST['nivel_de_ensino'];
     $id_escolaridade = $_POST['ano_escolaridade'];
-    $id_assunto = $_POST['disciplinas'];
+    $id_disciplina = $_POST['disciplinas'];
     $foto_questao = ''; 
+    $material_questao = null; 
     $id_situacao = 2;
 
-    // Lógica para lidar com o upload da imagem
+    // NOVOS DADOS DE MÍDIA
+    // 1. Link da Vídeo Aula (Assume a nova coluna `video_aula_link`)
+    $video_aula_link = !empty($_POST['video_aula_link']) ? $_POST['video_aula_link'] : null;
+    
+    // 2. Link do Vídeo de Resolução (Usa a coluna `video_questao` existente)
+    $video_questao = !empty($_POST['video_questao']) ? $_POST['video_questao'] : null;
+    
+    // Configurações de upload
+    $upload_dir = __DIR__ . '/../../uploads/';
+    if (!is_dir($upload_dir)) {
+        mkdir($upload_dir, 0777, true);
+    }
+    
+    // Lógica para lidar com o upload da IMAGEM da questão
     if (isset($_FILES['foto_quest']) && $_FILES['foto_quest']['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = __DIR__ . '/../../uploads/';
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
-        $file_name = uniqid('quest_') . '_' . basename($_FILES['foto_quest']['name']);
+        $file_name = uniqid('img_') . '_' . basename($_FILES['foto_quest']['name']);
         $file_path = $upload_dir . $file_name;
 
         if (move_uploaded_file($_FILES['foto_quest']['tmp_name'], $file_path)) {
             $foto_questao = '../../uploads/' . $file_name;
         } else {
-            die("Erro ao fazer o upload da imagem.");
+            die("Erro ao fazer o upload da imagem da questão.");
+        }
+    }
+
+    // 3. Lógica para lidar com o upload do MATERIAL DE APOIO (PDF, etc.)
+    if (isset($_FILES['material_file']) && $_FILES['material_file']['error'] === UPLOAD_ERR_OK) {
+        $file_name = uniqid('material_') . '_' . basename($_FILES['material_file']['name']);
+        $file_path = $upload_dir . $file_name;
+
+        if (move_uploaded_file($_FILES['material_file']['tmp_name'], $file_path)) {
+            $material_questao = '../../uploads/' . $file_name; // Salva o caminho relativo
+        } else {
+            die("Erro ao fazer o upload do material de apoio.");
         }
     }
     
-    // Preparar e executar a inserção no banco de dados sem os campos de vídeo e material
-    $sql_insert = "INSERT INTO questoes (enunciado, foto_questao, alt_correta, alt_incorreta1, alt_incorreta2, alt_incorreta3, origem, id_nivel_ensino, id_escolaridade, id_assunto, id_situacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    // Preparar e executar a inserção no banco de dados com os três campos de mídia
+    // ATENÇÃO: A coluna 'video_aula_link' deve existir no BD.
+    $sql_insert = "INSERT INTO questoes (enunciado, foto_questao, video_aula_link, video_questao, material_questao, alt_correta, alt_incorreta1, alt_incorreta2, alt_incorreta3, origem, id_nivel_ensino, id_escolaridade, id_disciplina, id_situacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $stmt = $pdo->prepare($sql_insert);
     $stmt->execute([
         $enunciado,
         $foto_questao,
+        $video_aula_link,    // NOVO: Link do Vídeo Aula
+        $video_questao,      // Link do Vídeo de Resolução
+        $material_questao,   // Caminho do arquivo de Material/PDF
         $alt_correta,
         $alt_errada1,
         $alt_errada2,
@@ -47,12 +73,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $origem,
         $id_nivel_ensino,
         $id_escolaridade,
-        $id_assunto,
+        $id_disciplina,
         $id_situacao
     ]);
 
     if ($stmt->rowCount()) {
-        echo "<script>alert('Questão criada com sucesso e enviada para análise!'); window.location.href = '../../Dashboards/index.php';</script>";
+        echo "<script>alert('Questão criada com sucesso e enviada para análise!'); window.location.href = '../../Dashboards/Alunos/index.php';</script>";
     } else {
         echo "<script>alert('Erro ao criar a questão.');</script>";
     }
@@ -83,7 +109,7 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
     <title>Criar - Questão</title>
     <link rel="stylesheet" href="../../Include/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2kXJd5bSg9k35JpI5fI0dG3v9T3P5p4dC3b5sF55E+J3V9O9T3V5b5v5" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2kXJd5bSg9k35JpI5fI0dG3v9T3P5p4dC3b5sF55E+J3V9O9T3P5p4dC3b5sF55E+J3V9O9T3V5b5v5" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 
 <body>
@@ -140,6 +166,29 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
+                
+                <hr class="mt-4 mb-4">
+                <h5 class="mb-3">Links e Arquivos de Mídia (Opcional)</h5>
+
+                <div class="mb-3">
+                    <label for="video_aula_link" class="form-label">Link da Vídeo Aula (Conteúdo)</label>
+                    <input type="url" class="form-control" id="video_aula_link" name="video_aula_link" placeholder="Ex: https://www.youtube.com/watch?v=...">
+                    <small class="form-text text-muted">Link do vídeo com a explanação do conteúdo relacionado (salvo em `video_aula_link`).</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="video_questao" class="form-label">Link do Vídeo de Resolução da Questão</label>
+                    <input type="url" class="form-control" id="video_questao" name="video_questao" placeholder="Ex: https://www.youtube.com/watch?v=...">
+                    <small class="form-text text-muted">Link do vídeo com a solução da questão (salvo em `video_questao`).</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="material_file" class="form-label">Upload do Material de Apoio (PDF, Docs, etc.)</label>
+                    <input class="form-control" type="file" id="material_file" name="material_file" accept=".pdf,.doc,.docx,.txt">
+                    <small class="form-text text-muted">O arquivo será salvo no servidor e o caminho no campo `material_questao`.</small>
+                </div>
+
+                <hr class="mt-4 mb-4">
 
                 <div class="mb-3">
                     <label for="origem" class="form-label">Origem</label>
@@ -246,7 +295,8 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
                 );
                 disciplinasFiltradas.forEach((disciplina) => {
                     const option = document.createElement('option');
-                    option.value = disciplina.id;
+                    const optionValue = disciplina.id;
+                    option.value = optionValue;
                     option.textContent = disciplina.disciplina;
                     disciplinasSelect.appendChild(option);
                 });

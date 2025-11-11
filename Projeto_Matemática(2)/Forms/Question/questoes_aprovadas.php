@@ -50,14 +50,14 @@ $questoes_ativo = true;
                                 <td><?php echo htmlspecialchars($questao['origem']); ?></td>
                                 <td><?php echo htmlspecialchars($questao['disciplina']); ?></td>
                                 <td>
-                                    <a href="../../formularios/questao/editar_questao.php?id=<?php echo $questao['id']; ?>"
+                                    <a href="../../Forms/Question/editar_questao.php?id=<?php echo $questao['id']; ?>"
                                         class="btn btn-warning btn-sm">Editar</a>
-                                    <a href="../../formularios/questao/excluir_questao.php?id=<?php echo $questao['id']; ?>"
+                                    <a href="../../Forms/Question/excluir_questao.php?id=<?php echo $questao['id']; ?>"
                                         class="btn btn-danger btn-sm"
                                         onclick="return confirm('Tem certeza que deseja excluir esta questao?');">Excluir</a>
-                                    <a href="../../formularios/questao/negar_questao.php?id=<?php echo $questao['id']; ?>"
+                                    <a href="../../Forms/Question/negar_questao.php?id=<?php echo $questao['id']; ?>"
                                         class="btn btn-secondary btn-sm">Negar</a>
-                                    <a href="../../formularios/questao/visualizar_questao.php?id=<?php echo $questao['id']; ?>"
+                                    <a href="../../Forms/Question/visualizar_questao.php?id=<?php echo $questao['id']; ?>"
                                         class="btn btn-secondary btn-sm">View</a>
 
                                 </td>

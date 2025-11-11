@@ -27,35 +27,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $origem = $_POST['origem'];
     $id_nivel_ensino = $_POST['nivel_de_ensino'];
     $id_escolaridade = $_POST['ano_escolaridade'];
-    $id_assunto = $_POST['disciplinas'];
-    $foto_questao = $_POST['foto_existente'];
+    $id_disciplina = $_POST['disciplinas'];
+    $foto_questao = $_POST['foto_existente']; // Caminho da imagem existente
+
+    // CAMPOS DE MÍDIA
+    $video_aula_link = !empty($_POST['video_aula_link']) ? $_POST['video_aula_link'] : null;
+    $video_questao = !empty($_POST['video_questao']) ? $_POST['video_questao'] : null;
+    $material_questao = $_POST['material_existente']; // Caminho do material existente
 
     $upload_dir = __DIR__ . '/../../uploads/';
     if (!is_dir($upload_dir)) {
         mkdir($upload_dir, 0777, true);
     }
 
-    // Lógica para lidar com novo upload de imagem
+    // 1. Lógica para lidar com novo upload de IMAGEM
     if (isset($_FILES['foto_quest']) && $_FILES['foto_quest']['error'] === UPLOAD_ERR_OK) {
         $file_name = uniqid('quest_') . '_' . basename($_FILES['foto_quest']['name']);
         $file_path = $upload_dir . $file_name;
 
         if (move_uploaded_file($_FILES['foto_quest']['tmp_name'], $file_path)) {
-            if (!empty($foto_questao) && file_exists($upload_dir . basename($foto_questao))) {
-                unlink($upload_dir . basename($foto_questao));
+            // Se houver uma imagem antiga e for um caminho local, apaga
+            if (!empty($foto_questao) && strpos($foto_questao, '../../uploads/') === 0) {
+                $old_file_name = basename($foto_questao);
+                $old_file_path = $upload_dir . $old_file_name;
+                if (file_exists($old_file_path)) {
+                    unlink($old_file_path);
+                }
             }
             $foto_questao = '../../uploads/' . $file_name;
         } else {
-            die("Erro ao fazer o upload da nova imagem.");
+            die("Erro ao fazer o upload da nova imagem da questão.");
         }
     }
     
-    // Atualizar os dados no banco de dados sem os campos de vídeo e material
-    $sql_update = "UPDATE questoes SET enunciado = ?, foto_questao = ?, alt_correta = ?, alt_incorreta1 = ?, alt_incorreta2 = ?, alt_incorreta3 = ?, origem = ?, id_nivel_ensino = ?, id_escolaridade = ?, id_assunto = ? WHERE id = ?";
+    // 2. Lógica para lidar com novo upload de MATERIAL DE APOIO (PDF, etc.)
+    if (isset($_FILES['material_file']) && $_FILES['material_file']['error'] === UPLOAD_ERR_OK) {
+        $file_name = uniqid('material_') . '_' . basename($_FILES['material_file']['name']);
+        $file_path = $upload_dir . $file_name;
+
+        if (move_uploaded_file($_FILES['material_file']['tmp_name'], $file_path)) {
+            // Se houver material antigo e for um caminho local, apaga
+            if (!empty($material_questao) && strpos($material_questao, '../../uploads/') === 0) {
+                 $old_file_name = basename($material_questao);
+                 $old_file_path = $upload_dir . $old_file_name;
+                 if (file_exists($old_file_path)) {
+                     unlink($old_file_path);
+                 }
+            }
+            $material_questao = '../../uploads/' . $file_name; // Atualiza com o novo caminho
+        } else {
+            die("Erro ao fazer o upload do novo material de apoio.");
+        }
+    }
+    
+    // Atualizar os dados no banco de dados com os novos campos de mídia
+    // Incluindo video_aula_link, video_questao e material_questao no UPDATE
+    $sql_update = "UPDATE questoes SET enunciado = ?, foto_questao = ?, video_aula_link = ?, video_questao = ?, material_questao = ?, alt_correta = ?, alt_incorreta1 = ?, alt_incorreta2 = ?, alt_incorreta3 = ?, origem = ?, id_nivel_ensino = ?, id_escolaridade = ?, id_disciplina = ? WHERE id = ?";
     $stmt = $pdo->prepare($sql_update);
     $stmt->execute([
         $enunciado,
         $foto_questao,
+        $video_aula_link,    // NOVO: Link Vídeo Aula
+        $video_questao,      // Link Vídeo Resolução
+        $material_questao,   // Caminho Material Apoio
         $alt_correta,
         $alt_errada1,
         $alt_errada2,
@@ -63,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $origem,
         $id_nivel_ensino,
         $id_escolaridade,
-        $id_assunto,
+        $id_disciplina,
         $id
     ]);
 
@@ -85,7 +119,7 @@ $escolaridade = $pdo->prepare($sql_escolaridade);
 $escolaridade->execute();
 $escolaridades = $escolaridade->fetchAll(PDO::FETCH_ASSOC);
 
-$sql_disciplina = "SELECT id, disciplina, id_escolaridade FROM assuntos ORDER BY id DESC";
+$sql_disciplina = "SELECT id, disciplina, id_escolaridade FROM disciplinas ORDER BY id DESC";
 $disciplina = $pdo->prepare($sql_disciplina);
 $disciplina->execute();
 $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
@@ -108,7 +142,8 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
             <hr>
             <form class="needs-validation" action="#" method="POST" enctype="multipart/form-data" novalidate>
                 <input type="hidden" name="id" value="<?php echo htmlspecialchars($questao['id']); ?>">
-                <input type="hidden" name="foto_existente" value="<?php echo htmlspecialchars($questao['foto_questao']); ?>">
+                <input type="hidden" name="foto_existente" value="<?php echo htmlspecialchars($questao['foto_questao'] ?? ''); ?>">
+                <input type="hidden" name="material_existente" value="<?php echo htmlspecialchars($questao['material_questao'] ?? ''); ?>">
                 <input type="hidden" name="action" value="editar_questao">
 
                 <div class="mb-3">
@@ -124,7 +159,7 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
                     <?php if (!empty($questao['foto_questao'])): ?>
                         <div class="mb-2">
                             <img src="<?php echo htmlspecialchars($questao['foto_questao']); ?>" alt="Imagem da questao" class="img-fluid rounded" style="max-height: 200px;">
-                            <p class="mt-2 text-muted"><small>Para manter a imagem, não selecione um novo arquivo.</small></p>
+                            <p class="mt-2 text-muted"><small>Imagem atual. Para manter, não selecione um novo arquivo.</small></p>
                         </div>
                     <?php endif; ?>
                     <input class="form-control" type="file" id="foto_quest" name="foto_quest" accept="image/*">
@@ -163,6 +198,38 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                 </div>
+
+                <hr class="mt-4 mb-4">
+                <h5 class="mb-3">Links e Arquivos de Mídia</h5>
+                
+                <div class="mb-3">
+                    <label for="video_aula_link" class="form-label">Link da Vídeo Aula (Conteúdo)</label>
+                    <input type="url" class="form-control" id="video_aula_link" name="video_aula_link" value="<?php echo htmlspecialchars($questao['video_aula_link'] ?? ''); ?>" placeholder="Ex: https://www.youtube.com/watch?v=...">
+                    <small class="form-text text-muted">Este link será salvo no campo `video_aula_link`.</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="video_questao" class="form-label">Link do Vídeo de Resolução da Questão</label>
+                    <input type="url" class="form-control" id="video_questao" name="video_questao" value="<?php echo htmlspecialchars($questao['video_questao'] ?? ''); ?>" placeholder="Ex: https://www.youtube.com/watch?v=...">
+                    <small class="form-text text-muted">Este link será salvo no campo `video_questao`.</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="material_file" class="form-label">Upload do Material de Apoio (PDF, Docs, etc.)</label>
+                    <?php if (!empty($questao['material_questao'])): ?>
+                        <?php 
+                            $material_path = htmlspecialchars($questao['material_questao']);
+                            $file_name = basename($material_path);
+                        ?>
+                        <div class="alert alert-info py-2 my-2">
+                            Material atual: <a href="<?php echo $material_path; ?>" target="_blank"><?php echo $file_name; ?></a>. Selecione um novo arquivo abaixo para substituir.
+                        </div>
+                    <?php endif; ?>
+                    <input class="form-control" type="file" id="material_file" name="material_file" accept=".pdf,.doc,.docx,.txt">
+                    <small class="form-text text-muted">O arquivo será salvo no servidor e o caminho no campo `material_questao`.</small>
+                </div>
+
+                <hr class="mt-4 mb-4">
 
                 <div class="mb-3">
                     <label for="origem" class="form-label">Origem</label>
@@ -208,7 +275,7 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
                         <select id="disciplinas" name="disciplinas" class="form-select" required>
                             <option value="">Selecione uma disciplina</option>
                             <?php foreach ($disciplinas as $disciplina_item): ?>
-                                <option value="<?php echo htmlspecialchars($disciplina_item['id']); ?>" <?php echo ($disciplina_item['id'] == $questao['id_assunto']) ? 'selected' : ''; ?>>
+                                <option value="<?php echo htmlspecialchars($disciplina_item['id']); ?>" <?php echo ($disciplina_item['id'] == $questao['id_disciplina']) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($disciplina_item['disciplina']); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -254,6 +321,9 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
 
         function atualizarAnosEscolaridade() {
             const nivelId = parseInt(nivelEnsinoSelect.value, 10);
+            const selectedEscolaridadeId = <?php echo $questao['id_escolaridade']; ?>;
+
+            // Mantém a opção de "Selecione"
             anoEscolaridadeSelect.innerHTML = '<option value="">Selecione um ano</option>';
 
             if (!isNaN(nivelId)) {
@@ -264,7 +334,7 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
                     const option = document.createElement('option');
                     option.value = escolaridade.id;
                     option.textContent = escolaridade.nome_escolaridade;
-                    if (escolaridade.id == <?php echo $questao['id_escolaridade']; ?>) {
+                    if (escolaridade.id == selectedEscolaridadeId) {
                         option.selected = true;
                     }
                     anoEscolaridadeSelect.appendChild(option);
@@ -274,6 +344,7 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
 
         function atualizarDisciplinas() {
             const escolaridadeId = parseInt(anoEscolaridadeSelect.value, 10);
+            const selectedDisciplinaId = <?php echo $questao['id_disciplina']; ?>;
             disciplinasSelect.innerHTML = '<option value="">Selecione uma disciplina</option>';
 
             if (!isNaN(escolaridadeId)) {
@@ -284,7 +355,7 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
                     const option = document.createElement('option');
                     option.value = disciplina.id;
                     option.textContent = disciplina.disciplina;
-                    if (disciplina.id == <?php echo $questao['id_assunto']; ?>) {
+                    if (disciplina.id == selectedDisciplinaId) {
                         option.selected = true;
                     }
                     disciplinasSelect.appendChild(option);
@@ -294,11 +365,17 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
         
         // Disparar a atualização na carga da página para pré-selecionar os valores
         window.onload = function() {
+            // A chamada de atualizarAnosEscolaridade deve usar o valor armazenado no PHP
             atualizarAnosEscolaridade();
+            // A chamada de atualizarDisciplinas deve vir logo após
             atualizarDisciplinas();
         };
 
-        nivelEnsinoSelect.addEventListener('change', atualizarAnosEscolaridade);
+        nivelEnsinoSelect.addEventListener('change', () => {
+             atualizarAnosEscolaridade();
+             // Resetar disciplina quando muda o nível de ensino
+             disciplinasSelect.innerHTML = '<option value="">Selecione uma disciplina</option>';
+        });
         anoEscolaridadeSelect.addEventListener('change', atualizarDisciplinas);
     </script>
 </body>

@@ -92,7 +92,7 @@ try {
  
     $_SESSION['status_msg'] = "Cadastro atualizado com sucesso!";
     $_SESSION['status_type'] = "success";
-    header("Location: ../../Alunos/index.php"); 
+    header("Location: ../../Alunos/perfil.php"); 
     exit();
 
 } catch (PDOException $e) {

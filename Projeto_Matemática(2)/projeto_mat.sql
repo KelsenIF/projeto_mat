@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Tempo de geração: 02/11/2025 às 21:38
+-- Tempo de geração: 11/11/2025 às 02:07
 -- Versão do servidor: 9.1.0
 -- Versão do PHP: 8.3.14
 
@@ -129,10 +129,21 @@ INSERT INTO `disciplinas` (`id`, `disciplina`, `id_escolaridade`) VALUES
 DROP TABLE IF EXISTS `escolas`;
 CREATE TABLE IF NOT EXISTS `escolas` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `Código` int NOT NULL,
-  `Nome` varchar(256) NOT NULL,
-  `UF` varchar(256) NOT NULL,
-  `Município` varchar(256) NOT NULL,
+  `nome_escola` varchar(256) NOT NULL,
+  `cod_inep` int NOT NULL,
+  `cep` varchar(256) NOT NULL,
+  `rua` varchar(256) NOT NULL,
+  `numero` varchar(256) NOT NULL,
+  `bairro` varchar(256) NOT NULL,
+  `cidade` varchar(256) NOT NULL,
+  `estado` varchar(256) NOT NULL,
+  `telefone` varchar(256) NOT NULL,
+  `email` varchar(256) NOT NULL,
+  `etapa_ensino` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `tipo_escola` varchar(256) NOT NULL,
+  `status` int NOT NULL COMMENT '0 - Não confirmou email\r\n1 - Email Confirmado\r\n3 - Aprovado',
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `modified` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -140,8 +151,8 @@ CREATE TABLE IF NOT EXISTS `escolas` (
 -- Despejando dados para a tabela `escolas`
 --
 
-INSERT INTO `escolas` (`id`, `Código`, `Nome`, `UF`, `Município`) VALUES
-(1, 31013511, ' IFSULDEMINAS - CAMPUS TRÊS CORAÇÕES', 'MG', 'Três Corações');
+INSERT INTO `escolas` (`id`, `nome_escola`, `cod_inep`, `cep`, `rua`, `numero`, `bairro`, `cidade`, `estado`, `telefone`, `email`, `etapa_ensino`, `tipo_escola`, `status`, `created`, `modified`) VALUES
+(1, 'IFSULDEMINAS - CAMPUS TRÊS CORAÇÕES', 31013511, '37417-158', 'Rua Coronel Edgard Cavalcante de Albuquerque', '61', 'Chácara das Rosas', 'Três Corações', 'MG', '(35) 3239-9494', 'gabinete.trescoracoes@ifsuldeminas.edu.br', 'E. Médio', 'pública', 0, '2025-11-11 01:18:52', NULL);
 
 -- --------------------------------------------------------
 
@@ -157,6 +168,28 @@ CREATE TABLE IF NOT EXISTS `imagens` (
   `data_upload` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `logs`
+--
+
+DROP TABLE IF EXISTS `logs`;
+CREATE TABLE IF NOT EXISTS `logs` (
+  `id` int NOT NULL,
+  `cargo` varchar(256) NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Despejando dados para a tabela `logs`
+--
+
+INSERT INTO `logs` (`id`, `cargo`) VALUES
+(0, 'Aluno'),
+(1, 'Apoiador'),
+(2, 'Professor'),
+(3, 'MODERADOR');
 
 -- --------------------------------------------------------
 
@@ -178,6 +211,33 @@ CREATE TABLE IF NOT EXISTS `niveis_ensino` (
 INSERT INTO `niveis_ensino` (`id`, `nivel_ensino`) VALUES
 (1, 'Ensino Fundamental'),
 (2, 'Ensino Médio');
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `pessoas`
+--
+
+DROP TABLE IF EXISTS `pessoas`;
+CREATE TABLE IF NOT EXISTS `pessoas` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nome` varchar(256) NOT NULL,
+  `email` varchar(256) NOT NULL,
+  `foto_perfil` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `cpf` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `nome_escola` varchar(256) NOT NULL,
+  `nome_turma` varchar(256) NOT NULL,
+  `senha` varchar(256) NOT NULL,
+  `nivel_de_acesso` int NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Despejando dados para a tabela `pessoas`
+--
+
+INSERT INTO `pessoas` (`id`, `nome`, `email`, `foto_perfil`, `cpf`, `nome_escola`, `nome_turma`, `senha`, `nivel_de_acesso`) VALUES
+(7, '123a', 'rcpo30@hotmail.com', 'uploads/foto_6912976eef70b.jpg', '12074383673', '31013511', '1', '$2y$10$apAexIfv4H1S2KdQIDgoTOEoQhiVPbYF0Ek6kmCExc.OC9j/kAjhK', 1);
 
 -- --------------------------------------------------------
 
@@ -213,8 +273,8 @@ CREATE TABLE IF NOT EXISTS `questoes` (
 DROP TABLE IF EXISTS `turmas`;
 CREATE TABLE IF NOT EXISTS `turmas` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `nome` varchar(256) NOT NULL,
-  `codigoescola` int NOT NULL,
+  `nome_turma` varchar(256) NOT NULL,
+  `cod_inep` varchar(256) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -222,10 +282,10 @@ CREATE TABLE IF NOT EXISTS `turmas` (
 -- Despejando dados para a tabela `turmas`
 --
 
-INSERT INTO `turmas` (`id`, `nome`, `codigoescola`) VALUES
-(1, '3°INFORMÁTICA', 31013511),
-(2, '3°ADMINISTRAÇÃO', 31013511),
-(3, '3°MECÂNICA', 31013511);
+INSERT INTO `turmas` (`id`, `nome_turma`, `cod_inep`) VALUES
+(1, '3° INFORMÁTICA', '31013511'),
+(2, '3° ADMINISTRAÇÃO', '31013511'),
+(3, '3° MECÂNICA', '31013511');
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

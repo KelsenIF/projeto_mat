@@ -9,7 +9,7 @@ if (isset($_GET['id'])) {
 
     // Redireciona de volta para a página de questões em análise
 
-    header('Location: ../../../projeto_matematica/dashboards/index.php');
+    header('Location: ../../../Projeto_Matemática(2)/Dashboards/Alunos/index.php');
     exit();
 }
 ?>

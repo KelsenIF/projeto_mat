@@ -52,7 +52,7 @@ $questoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     <a href="excluir_questao.php?id=<?php echo $questao['id']; ?>" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja excluir esta questao?');">Excluir</a>
                                     <a href="aprovar_questao.php?id=<?php echo $questao['id']; ?>" class="btn btn-success btn-sm">Aprovar</a>
                                     <a href="negar_questao.php?id=<?php echo $questao['id']; ?>" class="btn btn-secondary btn-sm">Negar</a>
-                                    <a href="../../formularios/questao/visualizar_questao.php?id=<?php echo $questao['id']; ?>"
+                                    <a href="visualizar_questao.php?id=<?php echo $questao['id']; ?>"
                                         class="btn btn-secondary btn-sm">View</a>
                                 </td>
                             </tr>
