@@ -1,10 +1,10 @@
 <?php
-include_once('../../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+include_once('../../DASHBOARDS/include/connection.php');
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'criar_questao') {
 
-    $enunciado = $_POST['enunciado'];
+    $enunciado = $_POST['enunciado']; // O valor virá do campo hidden agora
     $alt_correta = $_POST['alt_correta'];
     $alt_errada1 = $_POST['alt_errada1'];
     $alt_errada2 = $_POST['alt_errada2'];
@@ -123,6 +123,67 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
         integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2kXJd5bSg9k35JpI5fI0dG3v9T3P5p4dC3b5sF55E+J3V9O9T3P5p4dC3b5sF55E+J3V9O9T3V5b5v5"
         crossorigin="anonymous" referrerpolicy="no-referrer" />
+        
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js"></script>
+    
+    <style>
+        .editor {
+            border: 1px solid #ced4da;
+            background-color: white;
+            padding: 10px;
+            min-height: 100px;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border-radius: 0.375rem; /* Bootstrap border-radius */
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            background-color: #f8f9fa; /* Bootstrap light gray */
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            gap: 12px;
+        }
+        .toolbar-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 4px 10px;
+            border-right: 1px solid #ccc;
+        }
+        .toolbar-section:last-child {
+            border-right: none;
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #333;
+        }
+        .toolbar-section button {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            color: #333;
+            padding: 4px 8px;
+            font-size: 14px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            min-width: 40px;
+            transition: all 0.2s ease;
+        }
+        .toolbar-section button:hover {
+            background-color: #e6e6e6;
+        }
+        .toolbar-section button:active {
+            background-color: #d0d0d0;
+            transform: scale(0.97);
+        }
+    </style>
 </head>
 
 <body>
@@ -130,16 +191,83 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
         <div class="card shadow-lg p-4">
             <h1 class="text-center mb-4">Criar Questão</h1>
             <hr>
-            <form class="needs-validation" action="#" method="POST" enctype="multipart/form-data" novalidate>
+            <form class="needs-validation" action="#" method="POST" enctype="multipart/form-data" novalidate onsubmit="return validateAndSubmit(event)">
                 <input type="hidden" name="action" value="criar_questao">
 
                 <div class="mb-3">
-                    <label for="enunciado" class="form-label">Enunciado:</label>
-                    <textarea class="form-control" id="enunciado" name="enunciado" rows="4" required></textarea>
+                    <label for="equationInput" class="form-label">Enunciado:</label>
+                    
+                    <div class="toolbar">
+                        <div class="toolbar-section">
+                            <div class="section-title">Operações</div>
+                            <button type="button" onclick="insertKatex('+', '+')">+</button>
+                            <button type="button" onclick="insertKatex('-', '-')">−</button>
+                            <button type="button" onclick="insertKatex('=', '=')">=</button>
+                            <button type="button" onclick="insertKatex('\\cdot', '\\cdot')">·</button>
+                            <button type="button" onclick="insertKatex('\\times', '\\times')">×</button>
+                            <button type="button" onclick="insertKatex('\\div', '\\div')">÷</button>
+                            <button type="button" onclick="insertKatex('\\dfrac{a}{b}', 'a')">Fração</button>
+                        </div>
+                
+                        <div class="toolbar-section">
+                            <div class="section-title">Funções</div>
+                            <button type="button" onclick="insertKatex('\\sqrt{}', '')">Raiz</button>
+                            <button type="button" onclick="insertKatex('^{}', '')">Expoente</button>
+                            <button type="button" onclick="insertKatex('\\log_{}{}', 'a')">log</button>
+                            <button type="button" onclick="insertKatex('\\sin', '\\sin')">sin</button>
+                            <button type="button" onclick="insertKatex('\\cos', '\\cos')">cos</button>
+                            <button type="button" onclick="insertKatex('\\tan', '\\tan')">tan</button>
+                        </div>
+                
+                        <div class="toolbar-section">
+                            <div class="section-title">Conjuntos</div>
+                            <button type="button" onclick="insertKatex('\\mathbb{N}', '\\mathbb{N}')">ℕ</button>
+                            <button type="button" onclick="insertKatex('\\mathbb{Z}', '\\mathbb{Z}')">ℤ</button>
+                            <button type="button" onclick="insertKatex('\\mathbb{Q}', '\\mathbb{Q}')">ℚ</button>
+                            <button type="button" onclick="insertKatex('\\mathbb{R}', '\\mathbb{R}')">ℝ</button>
+                            <button type="button" onclick="insertKatex('\\mathbb{C}', '\\mathbb{C}')">ℂ</button>
+                        </div>
+                
+                        <div class="toolbar-section">
+                            <div class="section-title">Símbolos</div>
+                            <button type="button" onclick="insertKatex('\\pi', '\\pi')">π</button>
+                            <button type="button" onclick="insertKatex('\\in', '\\in')">∈</button>
+                            <button type="button" onclick="insertKatex('\\notin', '\\notin')">∉</button>
+                            <button type="button" onclick="insertKatex('\\subset', '\\subset')">⊂</button>
+                            <button type="button" onclick="insertKatex('\\subseteq', '\\subseteq')">⊆</button>
+                            <button type="button" onclick="insertKatex('\\cup', '\\cup')">∪</button>
+                            <button type="button" onclick="insertKatex('\\cap', '\\cap')">∩</button>
+                            <button type="button" onclick="insertKatex('\\\\', '\\\\')">Quebra de linha</button>
+                        </div>
+                
+                        <div class="toolbar-section">
+                            <div class="section-title">Matrizes</div>
+                            <button type="button" onclick="insertKatex('\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}', 'a')">2×2</button>
+                            <button type="button" onclick="insertKatex('\\begin{pmatrix} a & b & c \\\\ d & e & f \\end{pmatrix}', 'a')">2×3</button>
+                        </div>
+                
+                        <div class="toolbar-section">
+                            <div class="section-title">Sistemas</div>
+                            <button type="button" onclick="insertKatex('\\begin{cases} x + y = 2 \\\\ 2x - y = 3 \\end{cases}', 'x + y = 2')">Sistema</button>
+                        </div>
+
+                        <div class="toolbar-section">
+                            <div class="section-title">Visualizar</div>
+                            <button type="button" onclick="renderEquation()">Renderizar</button>
+                        </div>
+                    </div>
+
+                    <div contenteditable="true" id="equationInput" class="editor" data-placeholder="Escreva, neste campo, o enunciado..." required></div>
+                    <input type="hidden" name="enunciado" id="enunciado">
                     <div class="invalid-feedback">
                         Por favor, insira o enunciado da questão.
                     </div>
                 </div>
+
+                <div id="renderedEquation" class="alert alert-secondary mt-3" style="min-height: 50px;">
+                    Pré-visualização do Enunciado
+                </div>
+
 
                 <div class="mb-3">
                     <label for="foto_quest" class="form-label">Imagem da questão (opcional)</label>
@@ -267,13 +395,14 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
         crossorigin="anonymous"></script>
 
     <script>
+        // Lógica de validação do Bootstrap
         (() => {
             'use strict'
             const forms = document.querySelectorAll('.needs-validation')
             Array.from(forms).forEach(form => {
                 form.addEventListener('submit', event => {
+                    // A validação principal é feita no validateAndSubmit, este bloco só adiciona a classe.
                     if (!form.checkValidity()) {
-                        event.preventDefault()
                         event.stopPropagation()
                     }
                     form.classList.add('was-validated')
@@ -281,6 +410,115 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
             })
         })()
 
+        // 🔑 INTEGRAÇÃO KATEX: Funções de KaTeX e Submissão
+        function insertKatex(codeToInsert, cursorPlaceholder) {
+            const editor = document.getElementById("equationInput");
+            editor.focus();
+            const selection = window.getSelection();
+
+            if (!selection.rangeCount) {
+                // Tenta inserir como texto simples se não houver seleção ativa
+                document.execCommand('insertText', false, codeToInsert);
+                return;
+            }
+
+            const range = selection.getRangeAt(0);
+
+            // Tenta inserir o código KaTeX (que é texto para o div contenteditable)
+            document.execCommand('insertText', false, codeToInsert);
+
+            // Lógica para posicionar o cursor, se houver um placeholder
+            if (cursorPlaceholder && codeToInsert.includes(cursorPlaceholder)) {
+                
+                // Calcula a posição de onde o cursor deve parar
+                const placeholderIndex = codeToInsert.indexOf(cursorPlaceholder);
+                
+                // A posição do cursor (em caracteres a partir do início do div) é:
+                // (Comprimento total do texto do editor APÓS a inserção) - (Comprimento do texto após o placeholder)
+                const currentText = editor.innerText;
+                const offset = currentText.length - (codeToInsert.length - placeholderIndex);
+
+                let charCount = 0;
+                let textNode = editor.firstChild;
+                
+                // Percorre os nós de texto para achar a posição correta
+                while (textNode) {
+                    if (textNode.nodeType === Node.TEXT_NODE) {
+                        if (charCount + textNode.length >= offset) {
+                            const positionToSet = offset - charCount;
+                            range.setStart(textNode, positionToSet);
+                            range.setEnd(textNode, positionToSet);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            break;
+                        }
+                        charCount += textNode.length;
+                    }
+                    textNode = textNode.nextSibling;
+                }
+            }
+            renderEquation();
+        }
+
+        function renderEquation() {
+            let input = document.getElementById("equationInput").innerText;
+            const output = document.getElementById("renderedEquation");
+            
+            // Tratamento: remove quebras de linha/espaços excessivos e substitui por KaTeX-compatible
+            // Substitui quebras de linha por \\ (quebra de linha no KaTeX) e múltiplos espaços por \: ou similar
+            input = input.trim().replace(/\n/g, '\\\\').replace(/ {2,}/g, '\\;'); 
+
+            if (input === "") {
+                output.innerHTML = "Pré-visualização do Enunciado";
+                return;
+            }
+
+            try {
+                // Tenta renderizar como displayMode para melhor visualização em bloco
+                katex.render(input, output, {
+                    throwOnError: false,
+                    displayMode: true
+                });
+            } catch (err) {
+                // Em caso de erro, exibe o código bruto
+                output.innerHTML = "<span style='color: red;'>Erro ao renderizar (código KaTeX inválido). Exibindo código bruto:</span><br>" + input;
+                console.error(err);
+            }
+        }
+
+        function validateAndSubmit(event) {
+            const editor = document.getElementById("equationInput");
+            const hiddenEnunciado = document.getElementById("enunciado");
+            const form = event.target;
+
+            // 1. Validar se o editor está vazio
+            const editorText = editor.innerText.trim();
+            if (editorText === "") {
+                // Adiciona a classe de validação do Bootstrap para mostrar o feedback
+                form.classList.add('was-validated');
+                editor.style.borderColor = 'red';
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            } else {
+                 editor.style.borderColor = '#ced4da'; // Reverte a cor
+            }
+
+            // 2. Copiar o conteúdo do editor para o campo hidden
+            // Tratamento: remove quebras de linha e substitui espaços múltiplos
+            hiddenEnunciado.value = editorText.replace(/\n/g, ' ').replace(/ {2,}/g, '\\;'); 
+            
+            // 3. Continuar com a validação do Bootstrap (para os outros campos)
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Lógica de dependência dos dropdowns
         const escolaridadesData = <?php echo json_encode($escolaridades); ?>;
         const disciplinasData = <?php echo json_encode($disciplinas); ?>;
 
@@ -326,6 +564,17 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
 
         nivelEnsinoSelect.addEventListener('change', atualizarAnosEscolaridade);
         anoEscolaridadeSelect.addEventListener('change', atualizarDisciplinas);
+        
+        // Renderiza a pré-visualização ao carregar a página (se houver texto)
+        window.onload = function() {
+            // Garante que o KaTeX está pronto antes de tentar renderizar
+            if (typeof katex !== 'undefined') {
+                renderEquation();
+            } else {
+                // Se o KaTeX ainda não carregou, tenta novamente após um pequeno atraso
+                setTimeout(renderEquation, 500);
+            }
+        };
     </script>
 </body>
 

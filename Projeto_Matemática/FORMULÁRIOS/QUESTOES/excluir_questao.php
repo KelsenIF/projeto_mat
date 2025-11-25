@@ -1,5 +1,5 @@
 <?php
-include_once('../../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+include_once('../../DASHBOARDS/include/connection.php');
 
 if (isset($_GET['id'])) {
     $id = $_GET['id'];

@@ -1,5 +1,5 @@
 <?php
-require_once('../../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+require_once('../../DASHBOARDS/include/connection.php');
 
 if (isset($_GET['id'])) {
     $id = $_GET['id'];

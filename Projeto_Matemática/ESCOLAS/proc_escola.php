@@ -1,6 +1,6 @@
 <?php
 
-require_once('../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+require_once('../DASHBOARDS/include/connection.php');
 
 try {
     $pdo = new PDO("mysql:host=" . host . ";dbname=" . database_name . ";charset=utf8", user, password);

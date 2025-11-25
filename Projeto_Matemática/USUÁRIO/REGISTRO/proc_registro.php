@@ -1,6 +1,6 @@
 <?php
 
-require_once('../../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+require_once('../../DASHBOARDS/include/connection.php');
 
 
 const UPLOAD_DIR_FISICO = __DIR__ . '/uploads/';

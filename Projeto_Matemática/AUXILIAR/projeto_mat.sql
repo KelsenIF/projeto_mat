@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Tempo de geração: 24/11/2025 às 21:33
--- Versão do servidor: 9.1.0
--- Versão do PHP: 8.3.14
+-- Tempo de geração: 25/11/2025 às 19:47
+-- Versão do servidor: 8.3.0
+-- Versão do PHP: 8.2.18
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS `pessoas` (
 --
 
 INSERT INTO `pessoas` (`id`, `nome`, `email`, `foto_perfil`, `cpf`, `nome_escola`, `nome_turma`, `senha`, `nivel_de_acesso`) VALUES
-(9, 'Kelsen Chaves Paiva de Oliveira G. Antônio', 'kelsenchaves27@gmail.com', 'uploads/foto_691f75e1c5b77.jpg', '12074383673', '31013511', '1', '$2y$10$JeYmyHltbQ3ZSVR44ZmKceoeg29RghY0Pxn50Fhzui3EdQ9Y3v4HC', 4);
+(9, 'Kelsen Chaves Paiva de Oliveira Gonçalves Antônio', 'kelsenchaves27@gmail.com', 'uploads/foto_6925ddf10a212.png', '12074383673', '31013511', '1', '$2y$10$JeYmyHltbQ3ZSVR44ZmKceoeg29RghY0Pxn50Fhzui3EdQ9Y3v4HC', 4);
 
 -- --------------------------------------------------------
 
@@ -198,7 +198,7 @@ DROP TABLE IF EXISTS `questoes`;
 CREATE TABLE IF NOT EXISTS `questoes` (
   `id` int NOT NULL AUTO_INCREMENT,
   `enunciado` text NOT NULL,
-  `video_aula_link` varchar(256) NOT NULL,
+  `video_aula_link` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `foto_questao` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `video_questao` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `material_questao` varchar(256) DEFAULT NULL,
@@ -212,7 +212,15 @@ CREATE TABLE IF NOT EXISTS `questoes` (
   `id_disciplina` int NOT NULL,
   `id_situacao` int NOT NULL COMMENT '0-> negada\r\n1-> aprovada\r\n2-> em analise',
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Despejando dados para a tabela `questoes`
+--
+
+INSERT INTO `questoes` (`id`, `enunciado`, `video_aula_link`, `foto_questao`, `video_questao`, `material_questao`, `alt_correta`, `alt_incorreta1`, `alt_incorreta2`, `alt_incorreta3`, `origem`, `id_nivel_ensino`, `id_escolaridade`, `id_disciplina`, `id_situacao`) VALUES
+(3, 'sdfgjukiolç', NULL, '', NULL, NULL, '1', 'Tim Maia', 'c', '4', 'UFLA/2021', 1, 4, 2, 2),
+(4, '\\dfrac{1}{2}-\\dfrac{3}{4}', NULL, '', NULL, NULL, '1', 'Tim Maia', 'c', 'banana', 'UFLA/2021', 1, 4, 2, 2);
 
 -- --------------------------------------------------------
 

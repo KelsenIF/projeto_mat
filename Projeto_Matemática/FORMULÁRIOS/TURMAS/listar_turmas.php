@@ -1,5 +1,5 @@
 <?php
-require_once('../../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+require_once('../../DASHBOARDS/include/connection.php');
 
 $sql_turma = "
     SELECT 

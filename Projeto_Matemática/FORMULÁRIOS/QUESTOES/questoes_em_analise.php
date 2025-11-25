@@ -1,10 +1,22 @@
 <?php
-include_once('../../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+include_once('../../DASHBOARDS/include/connection.php');
+
+// ADICIONE ESTAS DUAS LINHAS PARA GARANTIR QUE O SIDEBAR FUNCIONE COM NÍVEIS DE ACESSO.
+session_start();
+$nivel_acesso = $_SESSION['nivel_de_acesso'] ?? 0;
 
 $sql = "SELECT questoes.*, disciplinas.disciplina FROM questoes INNER JOIN disciplinas ON questoes.id_disciplina = disciplinas.id WHERE questoes.id_situacao = 2 ORDER BY questoes.id DESC";
 $stmt = $pdo->prepare($sql);
 $stmt->execute();
 $questoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// --- INÍCIO DA MUDANÇA PARA BREADCRUMBS ---
+$breadcrumbs = [
+       ['url' => '../../DASHBOARDS/ALUNOS/index.php', 'title' => 'Dashboard'],
+    ['url' => '../../DASHBOARDS/ALUNOS/index.php', 'title' => 'Questões'],
+    ['url' => 'questoes_em_analise.php', 'title' => 'Em Análise']
+];
+// --- FIM DA MUDANÇA PARA BREADCRUMBS ---
 ?>
 
 <!doctype html>
@@ -33,108 +45,43 @@ $questoes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 font-size: 3.5rem;
             }
         }
-
-        .b-example-divider {
-            width: 100%;
-            height: 3rem;
-            background-color: #0000001a;
-            border: solid rgba(0, 0, 0, 0.15);
-            border-width: 1px 0;
-            box-shadow:
-                inset 0 0.5em 1.5em #0000001a,
-                inset 0 0.125em 0.5em #00000026;
-        }
-
-        .b-example-vr {
-            flex-shrink: 0;
-            width: 1.5rem;
-            height: 100vh;
-        }
-
-        .bi {
-            vertical-align: -0.125em;
-            fill: currentColor;
-        }
-
-        .nav-scroller {
-            position: relative;
-            z-index: 2;
-            height: 2.75rem;
-            overflow-y: hidden;
-        }
-
-        .nav-scroller .nav {
-            display: flex;
-            flex-wrap: nowrap;
-            padding-bottom: 1rem;
-            margin-top: -1px;
-            overflow-x: auto;
-            text-align: center;
-            white-space: nowrap;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .btn-bd-primary {
-            --bd-violet-bg: #712cf9;
-            --bd-violet-rgb: 112.520718, 44.062154, 249.437846;
-            --bs-btn-font-weight: 600;
-            --bs-btn-color: var(--bs-white);
-            --bs-btn-bg: var(--bd-violet-bg);
-            --bs-btn-border-color: var(--bd-violet-bg);
-            --bs-btn-hover-color: var(--bs-white);
-            --bs-btn-hover-bg: #6528e0;
-            --bs-btn-hover-border-color: #6528e0;
-            --bs-btn-focus-shadow-rgb: var(--bd-violet-rgb);
-            --bs-btn-active-color: var(--bs-btn-hover-color);
-            --bs-btn-active-bg: #5a23c8;
-            --bs-btn-active-border-color: #5a23c8;
-        }
-
-        .bd-mode-toggle {
-            z-index: 1500;
-        }
-
-        .bd-mode-toggle .bi {
-            width: 1em;
-            height: 1em;
-        }
-
-        .bd-mode-toggle .dropdown-menu .active .bi {
-            display: block !important;
-        }
     </style>
-
 </head>
 
 <body>
-    <div class="container-fluid">
+    <?php
+    include_once('../../DASHBOARDS/COMPONENTES/navbar.php');
+    ?>
 
+    <div class="container-fluid">
         <div class="row">
             <?php
-            include_once('../../DASHBOARDS/COMPONENTES/svg.php');
-            include_once('../../DASHBOARDS/COMPONENTES/navbar.php');
+            
             include_once('../../DASHBOARDS/COMPONENTES/sidebar.php');
+            include_once('../../DASHBOARDS/COMPONENTES/svg.php');
             ?>
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <div
-                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mx-auto">
+                <?php include_once('../../DASHBOARDS/COMPONENTES/breadcrumbs.php'); ?>
+                <div class="pt-3 pb-2 mb-3">
                     <h1 class="h2">Questões em Análise</h1>
                 </div>
-                <table id="questoesTable" class="display">
+
+                <table id="questoesTable" class="table table-striped table-bordered" style="width:100%">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Enunciado</th>
                             <th>Origem</th>
-                            <th>Assunto</th>
+                            <th>Disciplina</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($questoes as $questao): ?>
+                        <?php foreach ($questoes as $questao) : ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($questao['id']); ?></td>
-                                <td><?php echo htmlspecialchars($questao['enunciado']); ?></td>
+                                <td><?php echo htmlspecialchars(mb_substr($questao['enunciado'], 0, 50)) . (mb_strlen($questao['enunciado']) > 50 ? '...' : ''); ?></td>
                                 <td><?php echo htmlspecialchars($questao['origem']); ?></td>
                                 <td><?php echo htmlspecialchars($questao['disciplina']); ?></td>
                                 <td>

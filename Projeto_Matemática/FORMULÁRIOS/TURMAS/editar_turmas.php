@@ -1,6 +1,6 @@
 <?php
 
-require_once('../../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+require_once('../../DASHBOARDS/include/connection.php');
 
 
 $sql_escolas = "SELECT id, nome_escola, cod_inep FROM escolas ORDER BY nome_escola ASC";

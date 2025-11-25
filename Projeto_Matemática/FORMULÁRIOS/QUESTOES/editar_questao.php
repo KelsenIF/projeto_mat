@@ -1,5 +1,5 @@
 <?php
-include_once('../../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+include_once('../../DASHBOARDS/include/connection.php');
 
 $questao = null;
 if (isset($_GET['id'])) {
@@ -18,7 +18,7 @@ if (isset($_GET['id'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'editar_questao') {
     $id = $_POST['id'];
-    $enunciado = $_POST['enunciado'];
+    $enunciado = $_POST['enunciado']; // O valor virá do campo hidden agora
     $alt_correta = $_POST['alt_correta'];
     $alt_errada1 = $_POST['alt_errada1'];
     $alt_errada2 = $_POST['alt_errada2'];
@@ -33,34 +33,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $video_questao = !empty($_POST['video_questao']) ? $_POST['video_questao'] : null;
     $material_questao = $_POST['material_existente'];
 
+    // Lógica para upload e remoção de arquivos existentes
     $upload_dir = __DIR__ . '/../../uploads/';
     if (!is_dir($upload_dir)) {
         mkdir($upload_dir, 0777, true);
     }
-
+    
+    // UPLOAD DA NOVA FOTO
     if (isset($_FILES['foto_quest']) && $_FILES['foto_quest']['error'] === UPLOAD_ERR_OK) {
         $file_name = uniqid('quest_') . '_' . basename($_FILES['foto_quest']['name']);
-        $file_path = $upload_dir . $file_name;
+        // O caminho a ser salvo no servidor é relativo à pasta uploads
+        $file_path = $upload_dir . $file_name; 
 
         if (move_uploaded_file($_FILES['foto_quest']['tmp_name'], $file_path)) {
+            // Lógica para remover a foto antiga se existir (e se for um path antigo válido)
             if (!empty($foto_questao) && strpos($foto_questao, '../../uploads/') === 0) {
+                // Assume que o nome do arquivo antigo está no final do path
                 $old_file_name = basename($foto_questao);
                 $old_file_path = $upload_dir . $old_file_name;
                 if (file_exists($old_file_path)) {
                     unlink($old_file_path);
                 }
             }
+            // Caminho relativo para o banco de dados
             $foto_questao = '../../uploads/' . $file_name;
         } else {
             die("Erro ao fazer o upload da nova imagem da questão.");
         }
     }
     
+    // UPLOAD DO NOVO MATERIAL
     if (isset($_FILES['material_file']) && $_FILES['material_file']['error'] === UPLOAD_ERR_OK) {
         $file_name = uniqid('material_') . '_' . basename($_FILES['material_file']['name']);
         $file_path = $upload_dir . $file_name;
 
         if (move_uploaded_file($_FILES['material_file']['tmp_name'], $file_path)) {
+            // Lógica para remover o material antigo se existir
             if (!empty($material_questao) && strpos($material_questao, '../../uploads/') === 0) {
                  $old_file_name = basename($material_questao);
                  $old_file_path = $upload_dir . $old_file_name;
@@ -126,25 +134,153 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="../../Include/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2kXJd5bSg9k35JpI5fI0dG3v9T3P5p4dC3b5sF55E+J3V9O9T3V5b5v5" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.4/dist/katex.min.js"></script>
+    
+    <style>
+        .editor {
+            border: 1px solid #ced4da;
+            background-color: white;
+            padding: 10px;
+            min-height: 100px;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border-radius: 0.375rem;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            background-color: #f8f9fa;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            gap: 12px;
+        }
+        .toolbar-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 4px 10px;
+            border-right: 1px solid #ccc;
+        }
+        .toolbar-section:last-child {
+            border-right: none;
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 6px;
+            color: #333;
+        }
+        .toolbar-section button {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            color: #333;
+            padding: 4px 8px;
+            font-size: 14px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            min-width: 40px;
+            transition: all 0.2s ease;
+        }
+        .toolbar-section button:hover {
+            background-color: #e6e6e6;
+        }
+        .toolbar-section button:active {
+            background-color: #d0d0d0;
+            transform: scale(0.97);
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
         <div class="card shadow-lg p-4">
             <h1 class="text-center mb-4">Editar Questão</h1>
             <hr>
-            <form class="needs-validation" action="#" method="POST" enctype="multipart/form-data" novalidate>
+            <form class="needs-validation" action="#" method="POST" enctype="multipart/form-data" novalidate onsubmit="return validateAndSubmit(event)">
                 <input type="hidden" name="id" value="<?php echo htmlspecialchars($questao['id']); ?>">
                 <input type="hidden" name="foto_existente" value="<?php echo htmlspecialchars($questao['foto_questao'] ?? ''); ?>">
                 <input type="hidden" name="material_existente" value="<?php echo htmlspecialchars($questao['material_questao'] ?? ''); ?>">
                 <input type="hidden" name="action" value="editar_questao">
 
                 <div class="mb-3">
-                    <label for="enunciado" class="form-label">ENUNCIADO:</label>
-                    <textarea class="form-control" id="enunciado" name="enunciado" rows="4" required><?php echo htmlspecialchars($questao['enunciado']); ?></textarea>
+                    <label for="equationInput" class="form-label">ENUNCIADO:</label>
+                    
+                    <div class="toolbar">
+                        <div class="toolbar-section">
+                            <div class="section-title">Operações</div>
+                            <button type="button" onclick="insertKatex('+', '+')">+</button>
+                            <button type="button" onclick="insertKatex('-', '-')">−</button>
+                            <button type="button" onclick="insertKatex('=', '=')">=</button>
+                            <button type="button" onclick="insertKatex('\\cdot', '\\cdot')">·</button>
+                            <button type="button" onclick="insertKatex('\\times', '\\times')">×</button>
+                            <button type="button" onclick="insertKatex('\\div', '\\div')">÷</button>
+                            <button type="button" onclick="insertKatex('\\dfrac{a}{b}', 'a')">Fração</button>
+                        </div>
+                
+                        <div class="toolbar-section">
+                            <div class="section-title">Funções</div>
+                            <button type="button" onclick="insertKatex('\\sqrt{}', '')">Raiz</button>
+                            <button type="button" onclick="insertKatex('^{}', '')">Expoente</button>
+                            <button type="button" onclick="insertKatex('\\log_{}{}', 'a')">log</button>
+                            <button type="button" onclick="insertKatex('\\sin', '\\sin')">sin</button>
+                            <button type="button" onclick="insertKatex('\\cos', '\\cos')">cos</button>
+                            <button type="button" onclick="insertKatex('\\tan', '\\tan')">tan</button>
+                        </div>
+                
+                        <div class="toolbar-section">
+                            <div class="section-title">Conjuntos</div>
+                            <button type="button" onclick="insertKatex('\\mathbb{N}', '\\mathbb{N}')">ℕ</button>
+                            <button type="button" onclick="insertKatex('\\mathbb{Z}', '\\mathbb{Z}')">ℤ</button>
+                            <button type="button" onclick="insertKatex('\\mathbb{Q}', '\\mathbb{Q}')">ℚ</button>
+                            <button type="button" onclick="insertKatex('\\mathbb{R}', '\\mathbb{R}')">ℝ</button>
+                            <button type="button" onclick="insertKatex('\\mathbb{C}', '\\mathbb{C}')">ℂ</button>
+                        </div>
+                
+                        <div class="toolbar-section">
+                            <div class="section-title">Símbolos</div>
+                            <button type="button" onclick="insertKatex('\\pi', '\\pi')">π</button>
+                            <button type="button" onclick="insertKatex('\\in', '\\in')">∈</button>
+                            <button type="button" onclick="insertKatex('\\notin', '\\notin')">∉</button>
+                            <button type="button" onclick="insertKatex('\\subset', '\\subset')">⊂</button>
+                            <button type="button" onclick="insertKatex('\\subseteq', '\\subseteq')">⊆</button>
+                            <button type="button" onclick="insertKatex('\\cup', '\\cup')">∪</button>
+                            <button type="button" onclick="insertKatex('\\cap', '\\cap')">∩</button>
+                            <button type="button" onclick="insertKatex('\\\\', '\\\\')">Quebra de linha</button>
+                        </div>
+                
+                        <div class="toolbar-section">
+                            <div class="section-title">Matrizes</div>
+                            <button type="button" onclick="insertKatex('\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}', 'a')">2×2</button>
+                            <button type="button" onclick="insertKatex('\\begin{pmatrix} a & b & c \\\\ d & e & f \\end{pmatrix}', 'a')">2×3</button>
+                        </div>
+                
+                        <div class="toolbar-section">
+                            <div class="section-title">Sistemas</div>
+                            <button type="button" onclick="insertKatex('\\begin{cases} x + y = 2 \\\\ 2x - y = 3 \\end{cases}', 'x + y = 2')">Sistema</button>
+                        </div>
+
+                        <div class="toolbar-section">
+                            <div class="section-title">Visualizar</div>
+                            <button type="button" onclick="renderEquation()">Renderizar</button>
+                        </div>
+                    </div>
+                    
+                    <div contenteditable="true" id="equationInput" class="editor" data-placeholder="Escreva, neste campo, o enunciado..." required><?php echo htmlspecialchars($questao['enunciado']); ?></div>
+                    <input type="hidden" name="enunciado" id="enunciado" value="<?php echo htmlspecialchars($questao['enunciado']); ?>">
                     <div class="invalid-feedback">
                         Por favor, insira o enunciado da questão.
                     </div>
                 </div>
+
+                <div id="renderedEquation" class="alert alert-secondary mt-3" style="min-height: 50px;">
+                    Pré-visualização do Enunciado
+                </div>
+
 
                 <div class="mb-3">
                     <label for="foto_quest" class="form-label">Imagem da questão</label>
@@ -289,20 +425,126 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
+        // Lógica de validação do Bootstrap
         (() => {
             'use strict'
             const forms = document.querySelectorAll('.needs-validation')
             Array.from(forms).forEach(form => {
                 form.addEventListener('submit', event => {
+                    // A validação principal é feita no validateAndSubmit, este bloco só adiciona a classe.
                     if (!form.checkValidity()) {
-                        event.preventDefault()
                         event.stopPropagation()
                     }
                     form.classList.add('was-validated')
                 }, false)
             })
         })()
+        
+        // 🔑 INTEGRAÇÃO KATEX: Funções de KaTeX e Submissão (Idênticas a criar_questao.php)
+        function insertKatex(codeToInsert, cursorPlaceholder) {
+            const editor = document.getElementById("equationInput");
+            editor.focus();
+            const selection = window.getSelection();
 
+            if (!selection.rangeCount) {
+                document.execCommand('insertText', false, codeToInsert);
+                return;
+            }
+
+            const range = selection.getRangeAt(0);
+
+            // Tenta inserir o código KaTeX (que é texto para o div contenteditable)
+            document.execCommand('insertText', false, codeToInsert);
+
+            // Lógica para posicionar o cursor, se houver um placeholder
+            if (cursorPlaceholder && codeToInsert.includes(cursorPlaceholder)) {
+                
+                // Calcula a posição de onde o cursor deve parar
+                const placeholderIndex = codeToInsert.indexOf(cursorPlaceholder);
+                
+                // A posição do cursor (em caracteres a partir do início do div) é:
+                // (Comprimento total do texto do editor APÓS a inserção) - (Comprimento do texto após o placeholder)
+                const currentText = editor.innerText;
+                const offset = currentText.length - (codeToInsert.length - placeholderIndex);
+
+                let charCount = 0;
+                let textNode = editor.firstChild;
+                
+                // Percorre os nós de texto para achar a posição correta
+                while (textNode) {
+                    if (textNode.nodeType === Node.TEXT_NODE) {
+                        if (charCount + textNode.length >= offset) {
+                            const positionToSet = offset - charCount;
+                            range.setStart(textNode, positionToSet);
+                            range.setEnd(textNode, positionToSet);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            break;
+                        }
+                        charCount += textNode.length;
+                    }
+                    textNode = textNode.nextSibling;
+                }
+            }
+            renderEquation();
+        }
+
+        function renderEquation() {
+            let input = document.getElementById("equationInput").innerText;
+            const output = document.getElementById("renderedEquation");
+            
+            // Tratamento: remove quebras de linha/espaços excessivos e substitui por KaTeX-compatible
+            input = input.trim().replace(/\n/g, '\\\\').replace(/ {2,}/g, '\\;'); 
+
+            if (input === "") {
+                output.innerHTML = "Pré-visualização do Enunciado";
+                return;
+            }
+
+            try {
+                // Tenta renderizar como displayMode para melhor visualização em bloco
+                katex.render(input, output, {
+                    throwOnError: false,
+                    displayMode: true
+                });
+            } catch (err) {
+                // Em caso de erro, exibe o código bruto
+                output.innerHTML = "<span style='color: red;'>Erro ao renderizar (código KaTeX inválido). Exibindo código bruto:</span><br>" + input;
+                console.error(err);
+            }
+        }
+
+        function validateAndSubmit(event) {
+            const editor = document.getElementById("equationInput");
+            const hiddenEnunciado = document.getElementById("enunciado");
+            const form = event.target;
+
+            // 1. Validar se o editor está vazio
+            const editorText = editor.innerText.trim();
+            if (editorText === "") {
+                form.classList.add('was-validated');
+                editor.style.borderColor = 'red';
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            } else {
+                 editor.style.borderColor = '#ced4da';
+            }
+
+            // 2. Copiar o conteúdo do editor para o campo hidden
+            hiddenEnunciado.value = editorText.replace(/\n/g, ' ').replace(/ {2,}/g, '\\;'); 
+            
+            // 3. Continuar com a validação do Bootstrap
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Lógica de dependência dos dropdowns
         const escolaridadesData = <?php echo json_encode($escolaridades); ?>;
         const disciplinasData = <?php echo json_encode($disciplinas); ?>;
 
@@ -312,9 +554,12 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
 
         function atualizarAnosEscolaridade() {
             const nivelId = parseInt(nivelEnsinoSelect.value, 10);
-            const selectedEscolaridadeId = <?php echo $questao['id_escolaridade']; ?>;
+            // Usamos o valor do PHP para manter a seleção inicial, se disponível
+            const selectedEscolaridadeId = <?php echo isset($questao['id_escolaridade']) ? $questao['id_escolaridade'] : 'null'; ?>;
 
+            // Limpa as opções, exceto a primeira
             anoEscolaridadeSelect.innerHTML = '<option value="">Selecione um ano</option>';
+            // Não limpamos as disciplinas aqui para a primeira carga, a menos que o nível de ensino mude explicitamente.
 
             if (!isNaN(nivelId)) {
                 const escolaridadesFiltradas = escolaridadesData.filter(
@@ -324,7 +569,8 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
                     const option = document.createElement('option');
                     option.value = escolaridade.id;
                     option.textContent = escolaridade.nome_escolaridade;
-                    if (escolaridade.id == selectedEscolaridadeId) {
+                    // Mantém a opção selecionada na primeira carga
+                    if (escolaridade.id == selectedEscolaridadeId && nivelEnsinoSelect.value == nivelId) {
                         option.selected = true;
                     }
                     anoEscolaridadeSelect.appendChild(option);
@@ -334,7 +580,10 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
 
         function atualizarDisciplinas() {
             const escolaridadeId = parseInt(anoEscolaridadeSelect.value, 10);
-            const selectedDisciplinaId = <?php echo $questao['id_disciplina']; ?>;
+            // Usamos o valor do PHP para manter a seleção inicial, se disponível
+            const selectedDisciplinaId = <?php echo isset($questao['id_disciplina']) ? $questao['id_disciplina'] : 'null'; ?>;
+            
+            // Limpa as opções, exceto a primeira
             disciplinasSelect.innerHTML = '<option value="">Selecione uma disciplina</option>';
 
             if (!isNaN(escolaridadeId)) {
@@ -345,6 +594,7 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
                     const option = document.createElement('option');
                     option.value = disciplina.id;
                     option.textContent = disciplina.disciplina;
+                    // Mantém a opção selecionada na primeira carga
                     if (disciplina.id == selectedDisciplinaId) {
                         option.selected = true;
                     }
@@ -354,14 +604,25 @@ $disciplinas = $disciplina->fetchAll(PDO::FETCH_ASSOC);
         }
         
         window.onload = function() {
+            // Garante que o KaTeX está pronto antes de tentar renderizar
+            if (typeof katex !== 'undefined') {
+                renderEquation();
+            } else {
+                // Se o KaTeX ainda não carregou, tenta novamente após um pequeno atraso
+                setTimeout(renderEquation, 500);
+            }
+            
+            // A lógica PHP já preenche o dropdown na primeira carga, mas reexecutamos para consistência
             atualizarAnosEscolaridade();
             atualizarDisciplinas();
         };
 
         nivelEnsinoSelect.addEventListener('change', () => {
+             // Ao mudar o Nível de Ensino, recarrega Anos e limpa Disciplinas
              atualizarAnosEscolaridade();
              disciplinasSelect.innerHTML = '<option value="">Selecione uma disciplina</option>';
         });
+        
         anoEscolaridadeSelect.addEventListener('change', atualizarDisciplinas);
     </script>
 </body>

@@ -3,11 +3,10 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once('../../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+require_once('../../DASHBOARDS/include/connection.php');
 
 
 if (!isset($_SESSION['id_usuario'])) {
-    header("Location: ../LOGIN/login.php");
     exit;
 }
 
@@ -190,6 +189,21 @@ try {
             ?>
 
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="container-fluid pt-4 px-4">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb breadcrumb-chevron p-3 bg-body-tertiary rounded-3">
+                            <li class="breadcrumb-item">
+                                <a class="link-body-emphasis" href="../../DASHBOARDS/ALUNOS/index.php">
+                                    <svg class="bi" width="16" height="16" aria-hidden="true">
+                                        <use xlink:href="#house-door-fill"></use>
+                                    </svg>
+                                    <span class="visually-hidden">Home</span>
+                                </a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">Meu Perfil</li>
+                        </ol>
+                    </nav>
+                </div>
                 <div
                     class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Meu Perfil</h1>
@@ -205,14 +219,14 @@ try {
                     <div class="row">
                         <div class="col-md-4 text-center">
                             <div class="profile-img-container">
-                                <img src="/Projeto_Matemática(2)/User_Registration/<?php echo htmlspecialchars($usuario['foto_perfil']); ?>"
+                                <img src="../<?php echo htmlspecialchars($usuario['foto_perfil']); ?>" 
                                     alt="Foto de Perfil" class="profile-img">
                             </div>
                             <h3 class="mb-3"><?php echo htmlspecialchars($usuario['nome']); ?></h3>
                             <p class="text-muted">
                                 <?php echo htmlspecialchars($usuario['tipo_acesso'] ?? 'Tipo de Acesso não definido'); ?>
                             </p>
-                            <a href="../../Dashboards/Include/Settings/edit_registration.php" class="btn btn-primary">
+                            <a href="editar_perfil.php" class="btn btn-primary">
                                 Editar Perfil
                             </a>
                         </div>
@@ -224,8 +238,8 @@ try {
                                     <span><?php echo htmlspecialchars($usuario['nome']); ?></span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    Identificação de Usuário (CPF):
-                                    <span><?php echo htmlspecialchars($usuario['cpf'] ?? 'N/A'); ?></span>
+                                    Email:
+                                    <span><?php echo htmlspecialchars($usuario['email'] ?? 'N/A'); ?></span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     Nível de Acesso:

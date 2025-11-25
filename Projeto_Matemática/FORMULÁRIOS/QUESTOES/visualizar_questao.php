@@ -1,5 +1,12 @@
 <?php
-include_once('../../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+// Inclui o arquivo de conexão com o banco de dados
+include_once('../../DASHBOARDS/include/connection.php');
+
+// ADICIONE ESTAS DUAS LINHAS SE VOCÊ NÃO TEM UMA SESSÃO INICIADA
+// E PRECISA QUE O SIDEBAR FUNCIONE COM NÍVEIS DE ACESSO.
+// O VALOR '4' É UM EXEMPLO QUE MOSTRA TODOS OS ITENS DO MENU.
+session_start();
+$nivel_acesso = $_SESSION['nivel_de_acesso'] ?? 0;
 
 // Verifies if the 'id' parameter is present in the URL
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
@@ -44,6 +51,8 @@ $resposta_correta = array_search($questao['alt_correta'], $alternativas);
 ?>
 
 
+
+
 <!doctype html>
 <html lang="pt-br">
 
@@ -56,6 +65,18 @@ $resposta_correta = array_search($questao['alt_correta'], $alternativas);
     <link rel="stylesheet" href="../../Include/style.css">
     <link rel="stylesheet" type="text/css" href="../../Dashboards/dashboard.css">
     <style>
+       /* No visualizar_questao.php, no bloco <style> */
+/* Mude: .sidebar .nav-link .bi { ... } */
+
+/* Para: */
+.sidebar .bi {
+    width: 1rem;
+    height: 1rem;
+    vertical-align: -0.125em;
+    pointer-events: none;
+    fill: currentColor;
+}
+
         .alternative-item {
             cursor: pointer;
         }
@@ -95,6 +116,7 @@ $resposta_correta = array_search($questao['alt_correta'], $alternativas);
             white-space: normal;
         }
     </style>
+    </style>
 </head>
 
 <body>
@@ -103,161 +125,165 @@ $resposta_correta = array_search($questao['alt_correta'], $alternativas);
     include_once('../../DASHBOARDS/COMPONENTES/navbar.php');
     ?>
 
+    <div class="container-fluid">
+        <div class="row">
 
-    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mx-auto">
-        <div class="pt-3 pb-2 mb-3">
-        </div>
+            <?php
+            // Incluindo o SIDEBAR. Ele deve ser a primeira coluna (col-md-3)
+            include_once('../../DASHBOARDS/COMPONENTES/sidebar.php'); 
+            // OBSERVAÇÃO: Mude o caminho para a localização correta do seu sidebar.php
+            // Se o caminho correto for '../../DASHBOARDS/COMPONENTES/sidebar.php', use-o aqui.
+            ?>
 
-        <div class="card shadow-lg mb-4">
-            <div class="card-header text-bg-primary">
-                <ul class="nav nav-tabs card-header-tabs mt-2" id="myTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="question-tab" data-bs-toggle="tab"
-                            data-bs-target="#question" type="button" role="tab" aria-controls="question"
-                            aria-selected="true">Questão</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials"
-                            type="button" role="tab" aria-controls="materials" aria-selected="false">Detalhes da
-                            Questão</button>
-                    </li>
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="pt-3 pb-2 mb-3">
+                </div>
 
-                    <li class="nav-item d-none" role="presentation" id="video-tab-nav">
-                        <button class="nav-link" id="video-link-tab" data-bs-toggle="tab"
-                            data-bs-target="#video-tab-pane" type="button" role="tab" aria-controls="video-tab-pane"
-                            aria-selected="false">Resolução</button>
-                    </li>
+                <div class="card shadow-lg mb-4">
+                    <div class="card-header text-bg-primary">
+                        <ul class="nav nav-tabs card-header-tabs mt-2" id="myTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="question-tab" data-bs-toggle="tab"
+                                    data-bs-target="#question" type="button" role="tab" aria-controls="question"
+                                    aria-selected="true">Questão</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials"
+                                    type="button" role="tab" aria-controls="materials" aria-selected="false">Detalhes da
+                                    Questão</button>
+                            </li>
 
-                    <li class="nav-item d-none" role="presentation" id="pdf-tab-nav">
-                        <button class="nav-link" id="material-link-tab" data-bs-toggle="tab"
-                            data-bs-target="#material-tab-pane" type="button" role="tab"
-                            aria-controls="material-tab-pane" aria-selected="false">PDF</button>
-                    </li>
-                </ul>
-            </div>
+                            <li class="nav-item d-none" role="presentation" id="video-tab-nav">
+                                <button class="nav-link" id="video-link-tab" data-bs-toggle="tab"
+                                    data-bs-target="#video-tab-pane" type="button" role="tab" aria-controls="video-tab-pane"
+                                    aria-selected="false">Resolução</button>
+                            </li>
 
-            <div class="card-body">
-                <div class="tab-content pt-2" id="myTabContent">
-                    <div class="tab-pane fade show active" id="question" role="tabpanel" aria-labelledby="question-tab">
-                        <p class="card-text"><?php echo nl2br(htmlspecialchars($questao['enunciado'])); ?></p>
-
-                        <?php if (!empty($questao['foto_questao'])): ?>
-                            <div class="mb-3">
-                                <h6>Imagem da Questão:</h6>
-                                <img src="<?php echo htmlspecialchars($questao['foto_questao']); ?>"
-                                    class="img-fluid rounded shadow-sm" alt="Imagem da Questão"
-                                    style="max-width: 500px; max-height: 500px; height: auto;">
-                            </div>
-                        <?php endif; ?>
-
-                        <hr>
-                        <h6>Escolha uma alternativa e clique em confirmar:</h6>
-                        <ul class="list-group">
-                            <?php foreach ($shuffled_alternativas as $key => $alt): ?>
-                                <li class="list-group-item alternative-item" data-answer="<?php echo $key; ?>">
-                                    <?php echo htmlspecialchars($alt); ?>
-                                </li>
-                            <?php endforeach; ?>
+                            <li class="nav-item d-none" role="presentation" id="pdf-tab-nav">
+                                <button class="nav-link" id="material-link-tab" data-bs-toggle="tab"
+                                    data-bs-target="#material-tab-pane" type="button" role="tab"
+                                    aria-controls="material-tab-pane" aria-selected="false">PDF</button>
+                            </li>
                         </ul>
-
-                        <div class="mt-4 d-flex justify-content-between">
-                            <button id="confirmBtn" class="btn btn-primary" disabled>Confirmar</button>
-                        </div>
                     </div>
 
-                    <div class="tab-pane fade" id="materials" role="tabpanel" aria-labelledby="materials-tab">
+                    <div class="card-body">
+                        <div class="tab-content pt-2" id="myTabContent">
+                            <div class="tab-pane fade show active" id="question" role="tabpanel" aria-labelledby="question-tab">
+                                <p class="card-text"><?php echo nl2br(htmlspecialchars($questao['enunciado'])); ?></p>
 
-                        <div class="mb-4 p-3 border rounded">
-                            <h6>Vídeo Aula de Conteúdo:</h6>
-                            <?php if (!empty($questao['video_aula_link'])): ?>
-                                <p>Assista o vídeo de conteúdo antes de responder:</p>
-                                <div class="d-grid">
-                                    <a href="<?php echo htmlspecialchars($questao['video_aula_link']); ?>" target="_blank"
-                                        class="text-decoration-none btn btn-outline-success btn-block">
-                                        <i class="fas fa-video me-2"></i> Acessar Vídeo Aula
-                                    </a>
+                                <?php if (!empty($questao['foto_questao'])): ?>
+                                    <div class="mb-3">
+                                        <h6>Imagem da Questão:</h6>
+                                        <img src="<?php echo htmlspecialchars($questao['foto_questao']); ?>"
+                                            class="img-fluid rounded shadow-sm" alt="Imagem da Questão"
+                                            style="max-width: 500px; max-height: 500px; height: auto;">
+                                    </div>
+                                <?php endif; ?>
+
+                                <hr>
+                                <h6>Escolha uma alternativa e clique em confirmar:</h6>
+                                <ul class="list-group">
+                                    <?php foreach ($shuffled_alternativas as $key => $alt): ?>
+                                        <li class="list-group-item alternative-item" data-answer="<?php echo $key; ?>">
+                                            <?php echo htmlspecialchars($alt); ?>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+
+                                <div class="mt-4 d-flex justify-content-between">
+                                    <button id="confirmBtn" class="btn btn-primary" disabled>Confirmar</button>
                                 </div>
-                            <?php else: ?>
-                                <p class="text-muted mb-0">Não há vídeo aula de conteúdo cadastrada para esta questão.</p>
-                            <?php endif; ?>
-                        </div>
-                        <hr>
-
-                        <p><strong>Origem:</strong> <?php echo htmlspecialchars($questao['origem']); ?></p>
-                        <p><strong>Nível de Ensino:</strong> <?php echo htmlspecialchars($questao['nivel_ensino']); ?>
-                        </p>
-                        <p><strong>Ano Escolar:</strong> <?php echo htmlspecialchars($questao['nome_escolaridade']); ?>
-                        </p>
-                        <p><strong>Assunto:</strong> <?php echo htmlspecialchars($questao['disciplina']); ?></p>
-
-                        <?php if (!empty($questao['video_questao']) || !empty($questao['material_questao'])): ?>
-                            <div class="alert alert-info mt-3" role="alert">
-                                O **Vídeo de Resolução** e o **Material de Apoio (PDF)** serão liberados nas abas
-                                **Resolução** e **PDF** após a confirmação da sua resposta.
                             </div>
-                        <?php endif; ?>
 
-                        <div class="mt-4">
-                            <a href="javascript:history.back()" class="btn btn-secondary">Voltar</a>
-                        </div>
-                    </div>
+                            <div class="tab-pane fade" id="materials" role="tabpanel" aria-labelledby="materials-tab">
 
-                    <div class="tab-pane fade" id="video-tab-pane" role="tabpanel" aria-labelledby="video-link-tab">
-                        <div class="mb-3">
-                            <h6>Vídeo de Resolução da Questão:</h6>
-                            <?php if (!empty($questao['video_questao'])): ?>
-                                <p>Clique no botão abaixo para acessar o vídeo que explica a solução:</p>
-                                <div class="d-grid">
-                                    <a href="<?php echo htmlspecialchars($questao['video_questao']); ?>" target="_blank"
-                                        class="text-decoration-none btn btn-outline-primary btn-block">
-                                        <i class="fas fa-play-circle me-2"></i>
-                                        <?php echo htmlspecialchars($questao['video_questao']); ?>
-                                    </a>
+                                <div class="mb-4 p-3 border rounded">
+                                    <h6>Vídeo Aula de Conteúdo:</h6>
+                                    <?php if (!empty($questao['video_aula_link'])): ?>
+                                        <p>Assista o vídeo de conteúdo antes de responder:</p>
+                                        <div class="d-grid">
+                                            <a href="<?php echo htmlspecialchars($questao['video_aula_link']); ?>" target="_blank"
+                                                class="text-decoration-none btn btn-outline-success btn-block">
+                                                <i class="fas fa-video me-2"></i> Acessar Vídeo Aula
+                                            </a>
+                                        </div>
+                                    <?php else: ?>
+                                        <p class="text-muted mb-0">Não há vídeo aula de conteúdo cadastrada para esta questão.</p>
+                                    <?php endif; ?>
                                 </div>
-                            <?php else: ?>
-                                <div class="alert alert-warning" role="alert">
-                                    Link do Vídeo de Resolução não disponível para esta questão.
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
+                                <hr>
 
-                    <div class="tab-pane fade" id="material-tab-pane" role="tabpanel"
-                        aria-labelledby="material-link-tab">
-                        <div class="mb-3">
-                            <h6>Material de Apoio (PDF, Docs, etc.):</h6>
-                            <?php if (!empty($questao['material_questao'])): ?>
-                                <p>Clique no botão abaixo para acessar o material de apoio:</p>
-                                <?php
-                                // Assume que o material_questao agora é o caminho de um arquivo (upload)
-                                $material_link = htmlspecialchars($questao['material_questao']);
-                                $file_name = basename($questao['material_questao']);
-                                ?>
-                                <div class="d-grid">
-                                    <a href="<?php echo $material_link; ?>" target="_blank"
-                                        class="text-decoration-none btn btn-outline-primary btn-block">
-                                        <i class="fas fa-file-pdf me-2"></i> Baixar Arquivo: <?php echo $file_name; ?>
-                                    </a>
+                                <p><strong>Origem:</strong> <?php echo htmlspecialchars($questao['origem']); ?></p>
+                                <p><strong>Nível de Ensino:</strong> <?php echo htmlspecialchars($questao['nivel_ensino']); ?>
+                                </p>
+                                <p><strong>Ano Escolar:</strong> <?php echo htmlspecialchars($questao['nome_escolaridade']); ?>
+                                </p>
+                                <p><strong>Assunto:</strong> <?php echo htmlspecialchars($questao['disciplina']); ?></p>
+
+                                <?php if (!empty($questao['video_questao']) || !empty($questao['material_questao'])): ?>
+                                    <div class="alert alert-info mt-3" role="alert">
+                                        O **Vídeo de Resolução** e o **Material de Apoio (PDF)** serão liberados nas abas
+                                        **Resolução** e **PDF** após a confirmação da sua resposta.
+                                    </div>
+                                <?php endif; ?>
+
+                                <div class="mt-4">
+                                    <a href="javascript:history.back()" class="btn btn-secondary">Voltar</a>
                                 </div>
-                            <?php else: ?>
-                                <div class="alert alert-warning" role="alert">
-                                    Material de Apoio (PDF/Outros) não disponível para esta questão.
+                            </div>
+
+                            <div class="tab-pane fade" id="video-tab-pane" role="tabpanel" aria-labelledby="video-link-tab">
+                                <div class="mb-3">
+                                    <h6>Vídeo de Resolução da Questão:</h6>
+                                    <?php if (!empty($questao['video_questao'])): ?>
+                                        <p>Clique no botão abaixo para acessar o vídeo que explica a solução:</p>
+                                        <div class="d-grid">
+                                            <a href="<?php echo htmlspecialchars($questao['video_questao']); ?>" target="_blank"
+                                                class="text-decoration-none btn btn-outline-primary btn-block">
+                                                <i class="fas fa-play-circle me-2"></i>
+                                                <?php echo htmlspecialchars($questao['video_questao']); ?>
+                                            </a>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="alert alert-warning" role="alert">
+                                            Link do Vídeo de Resolução não disponível para esta questão.
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
-                            <?php endif; ?>
+                            </div>
+
+                            <div class="tab-pane fade" id="material-tab-pane" role="tabpanel"
+                                aria-labelledby="material-link-tab">
+                                <div class="mb-3">
+                                    <h6>Material de Apoio (PDF, Docs, etc.):</h6>
+                                    <?php if (!empty($questao['material_questao'])): ?>
+                                        <p>Clique no botão abaixo para acessar o material de apoio:</p>
+                                        <?php
+                                        // Assume que o material_questao agora é o caminho de um arquivo (upload)
+                                        $material_link = htmlspecialchars($questao['material_questao']);
+                                        $file_name = basename($questao['material_questao']);
+                                        ?>
+                                        <div class="d-grid">
+                                            <a href="<?php echo $material_link; ?>" target="_blank"
+                                                class="text-decoration-none btn btn-outline-primary btn-block">
+                                                <i class="fas fa-file-pdf me-2"></i> Baixar Arquivo: <?php echo $file_name; ?>
+                                            </a>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="alert alert-warning" role="alert">
+                                            Material de Apoio (PDF/Outros) não disponível para esta questão.
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
-    </main>
+       
     </div>
-    <div class="d-flex justify-content-end p-3">
-        <a href="questoes_em_analise.php" class="btn btn-primary">
-            Acessar Outro Site
-        </a>
-    </div>
-    </div>
-
     <?php
     include_once('../../DASHBOARDS/COMPONENTES/footer.php');
     ?>

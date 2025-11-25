@@ -1,5 +1,5 @@
 <?php
-include_once('../../DASHBOARDS/INCLUDE/SISTEMA_BE/connection.php');
+include_once('../../DASHBOARDS/include/connection.php');
 
 if (isset($_GET['id'])) {
     $id = $_GET['id'];
@@ -7,7 +7,7 @@ if (isset($_GET['id'])) {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$id]);
 
-    header('Location: questoes_aprovadas.php');
+    header('Location: ../../DASHBOARDS/ALUNOS/index.php');
     
     exit();
 }

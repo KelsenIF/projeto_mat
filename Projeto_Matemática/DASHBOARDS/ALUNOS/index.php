@@ -1,4 +1,8 @@
 <?php
+// Adicionei a inicialização da sessão aqui
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 //if (!isset($_SESSION['nivel_de_acesso'])) {
   //header("Location: ../../USUÁRIO/LOGIN/login.php?erro=2");
  // exit();
