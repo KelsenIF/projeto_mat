@@ -1,0 +1,9 @@
+Inserir modais de confirmação (exclusão e edição) futuramente;
+Inserir edição de perfil;
+Inserir recuperação de senha para os usuários (via e-mail) futuramente;
+Inserir validação de email para o cadastro de escolas futuramente;
+Configurar as migalhas de pão;
+Configurar os dados exibidos no perfil ;
+Configurar o sidebar (funcionando 100% apenas no perfil);
+Plugin ainda não foi inserido no cadastro de questões.
+
